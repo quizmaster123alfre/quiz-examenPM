@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Examen Completo - 175 Preguntas</title>
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #151f32;
+            --text-main: #f1f5f9;
+            --text-muted: #64748b;
+            --primary: #38bdf8;
+            --primary-hover: #0ea5e9;
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: #22314d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 750px;
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #0b0f19;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: background-color 0.2s;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--border);
+        }
+
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 600px) {
+            .mode-grid { grid-template-columns: 1fr; }
+        }
+
+        .mode-box {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .mode-box:hover { border-color: var(--primary); }
+        .mode-box.selected {
+            border-color: var(--primary);
+            background-color: rgba(56, 189, 248, 0.08);
+        }
+
+        .mode-box h3 { margin-bottom: 5px; color: var(--primary); }
+        .mode-box p { font-size: 0.8rem; color: var(--text-muted); }
+
+        .meta-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .timer {
+            font-family: monospace;
+            font-size: 1rem;
+            color: var(--text-main);
+            background: var(--border);
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background-color: var(--border);
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--primary);
+            transition: width 0.2s ease;
+        }
+
+        .q-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+            text-align: left;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            width: 100%;
+        }
+
+        .option:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-muted);
+        }
+
+        .option.correct {
+            background-color: rgba(16, 185, 129, 0.12) !important;
+            border-color: var(--success) !important;
+            color: #34d399;
+        }
+
+        .option.wrong {
+            background-color: rgba(239, 68, 68, 0.12) !important;
+            border-color: var(--danger) !important;
+            color: #f87171;
+        }
+
+        .option.disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .option.disabled.correct, .option.disabled.wrong { opacity: 1; }
+
+        .exp-card {
+            margin-top: 15px;
+            padding: 12px;
+            border-left: 3px solid var(--primary);
+            background-color: rgba(255, 255, 255, 0.01);
+            display: none;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .exp-card strong { color: var(--primary); }
+
+        .actions-panel {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .score-display {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .stat-box span {
+            display: block;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+
+        .review-scroll {
+            margin-top: 20px;
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .review-card {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+
+        .review-title { font-weight: 600; margin-bottom: 5px; }
+
+        .resume-alert {
+            background-color: rgba(56, 189, 248, 0.06);
+            border: 1px solid var(--primary);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: none;
+            font-size: 0.85rem;
+        }
+
+        .resume-actions { display: flex; gap: 10px; margin-top: 8px; }
+        .resume-actions .btn { margin-top: 0; padding: 6px 12px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Simulador de Examen Completo</h1>
+        <div class="subtitle">Desarrollo de Aplicaciones Multiplataforma (DAM) - 175 Preguntas</div>
+
+        <div id="scr-start" class="screen active">
+            <div id="resume-alert" class="resume-alert">
+                <p>Se ha detectado un progreso previo guardado localmente en este dispositivo.</p>
+                <div class="resume-actions">
+                    <button class="btn" onclick="loadSavedSession()">Reanudar progreso</button>
+                    <button class="btn btn-secondary" onclick="purgeSavedSession()">Borrar historial</button>
+                </div>
+            </div>
+
+            <p style="text-align: center; font-size: 0.9rem; color: var(--text-muted);">Selecciona la modalidad operativa del simulador antes de inicializar el examen:</p>
+            
+            <div class="mode-grid">
+                <div class="mode-box selected" id="mod-practice" onclick="setMode('practice')">
+                    <h3>Modo Práctica</h3>
+                    <p>Muestra correcciones y explicaciones de forma instantánea al marcar cada opción.</p>
+                </div>
+                <div class="mode-box" id="mod-exam" onclick="setMode('exam')">
+                    <h3>Modo Examen</h3>
+                    <p>Simulación real. Límite de 180 minutos. Resultados visibles únicamente al concluir la entrega completa.</p>
+                </div>
+            </div>
+
+            <button class="btn" onclick="bootSimulator()">Iniciar Cuestionario Unificado</button>
+        </div>
+
+        <div id="scr-quiz" class="screen">
+            <div class="meta-panel">
+                <div>Pregunta: <span id="lbl-index">1</span> / 175</div>
+                <div>Bloque Técnico: <span id="lbl-block">N/A</span></div>
+                <div id="lbl-timer" class="timer" style="display: none;">180:00</div>
+            </div>
+
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-fill"></div>
+            </div>
+
+            <div id="box-question" class="q-text">Cargando enunciado del examen...</div>
+            <div id="box-options" class="options-list"></div>
+
+            <div id="box-explanation" class="exp-card">
+                <strong>Explicación curricular:</strong> <span id="box-explanation-text">...</span>
+            </div>
+
+            <div class="actions-panel">
+                <button id="btn-next" class="btn" style="width: auto; min-width: 120px; display: none;" onclick="advanceQuiz()">Siguiente</button>
+            </div>
+        </div>
+
+        <div id="scr-results" class="screen">
+            <div style="text-align: center;">
+                <h2 id="lbl-verdict">Resultado de la simulación</h2>
+                <div id="score-num" class="score-display">0 / 175</div>
+                <div id="score-pct" style="color: var(--text-muted); font-size: 1rem; margin-bottom: 15px;">0% Aciertos</div>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-box">Correctas <span id="st-ok" style="color:var(--success);">0</span></div>
+                <div class="stat-box">Falladas <span id="st-ko" style="color:var(--danger);">0</span></div>
+                <div class="stat-box">Tiempo <span id="st-time">00:00</span></div>
+            </div>
+
+            <button class="btn" onclick="resetSimulator()">Reiniciar Cuestionario</button>
+            <div id="review-list" class="review-scroll"></div>
+        </div>
+    </div>
+
+    <script>
+        // BANCO OFICIAL ABSOLUTO DE 175 PREGUNTAS (SECCIONES 1, 2 Y 3 DE ILERNA)
+        const databaseRaw = [
+            // SECCIÓN 1: FUNDAMENTOS DE ANDROID STUDIO (1 a 40)
+            {s:1,q:'¿Cuál es la función del archivo AndroidManifest.xml en una aplicación de Android?',o:['Contiene el código fuente de la aplicación.','Contiene los recursos utilizados por la aplicación.','Define la estructura de la aplicación y sus componentes, como las actividades y servicios.','Almacena los datos de la aplicación.'],a:2,e:'Es el manifiesto central obligatorio que el S.O. lee antes de instanciar componentes o conceder permisos.'},
+            {s:1,q:'¿Qué es un BroadcastReceiver?',o:['Un componente que muestra una lista de elementos desplazable.','Un componente que se utiliza para almacenar datos en la base de datos de la aplicación.','Un componente que permite a la aplicación recibir mensajes del sistema o de otras aplicaciones.','Un componente que muestra una notificación en la barra de estado del dispositivo.'],a:2,e:'Escucha difusiones asíncronas globales del sistema operativo (batería baja, Wi-Fi, etc.).'},
+            {s:1,q:'¿Cuál es el método para obtener una referencia a un objeto View en el layout de una actividad?',o:['findViewById()','getViewById()','findView()','getComponentById()'],a:0,e:'Método estándar del SDK nativo para enlazar vistas declaradas en el layout XML con objetos en código.'},
+            {s:1,q:'¿Cuál es el método utilizado para hacer una llamada a una API en Android?',o:['HttpConnection.request()','HttpUrlConnection.open()','HttpClient.execute()','HttpRequest.send()'],a:1,e:'Firma clásica nativa contemplada curricularmente en el temario para flujos de red HTTP básicos.'},
+            {s:1,q:'¿Qué es un RecyclerView?',o:['Un componente que muestra una lista de elementos desplazable.','Un componente que se utiliza para almacenar datos en la base de datos de la aplicación.','Un componente que muestra una notificación en la barra de estado del dispositivo.','Un componente que se utiliza para mostrar una tabla de datos en la pantalla.'],a:0,e:'Componente avanzado optimizado para renderizar listas dinámicas masivas reciclando las celdas gráficas.'},
+            {s:1,q:'¿Cuál es el método que se llama cuando se crea una actividad en Android?',o:['onCreate()','onStart()','onResume()','onPause()'],a:0,e:'Callback primordial del ciclo de vida donde se inicializa la actividad y se asocia e infla el plano XML.'},
+            {s:1,q:'¿Cómo se puede finalizar una actividad en Android?',o:['Llamando al método finish()','Llamando al método destroy()','Llamando al método stop()','Llamando al método exit()'],a:0,e:'Destruye de forma limpia la actividad en primer plano, retirándola de la pila de retroceso.'},
+            {s:1,q:'¿Qué es el método onActivityResult() en Android?',o:['Un método para obtener una referencia a un objeto View en el layout de una actividad.','Un método que se llama cuando una actividad finaliza y devuelve un resultado a la actividad que la llamó.','Un método utilizado para hacer una llamada a una API en Android.','Un método utilizado para obtener los resultados de una consulta a la base de datos.'],a:1,e:'Recoge códigos de estado y datos retornados por intents secundarios lanzados para dar resultados.'},
+            {s:1,q:'¿Qué es el método onPause() en Android?',o:['Un método que se llama cuando se crea una actividad en Android.','Un método que se llama cuando una actividad finaliza y devuelve un resultado a la actividad que la llamó.','Un método que se llama cuando una actividad pierde el foco y se vuelve parcialmente visible.','Un método que se llama cuando una actividad se muestra en pantalla y es visible para el usuario.'],a:2,e:'Callback ejecutado cuando la actividad pierde parcialmente el foco interactivo (ej. por un diálogo superpuesto).'},
+            {s:1,q:'¿Qué es el método onSaveInstanceState() en Android?',o:['Un método que se llama cuando se crea una actividad en Android.','Un método que se llama cuando una actividad finaliza y devuelve un resultado a la actividad que la llamó.','Un método utilizado para guardar el estado de una actividad antes de que sea destruida.','Un método utilizado para restaurar el estado de una actividad después de que se haya destruido.'],a:2,e:'Guarda de forma temporal variables de la UI en un objeto Bundle ante destrucciones o rotaciones de pantalla.'},
+            {s:1,q:'¿Cuál es la clase base para todos los elementos de diseño de Android?',o:['View','ViewGroup','Layout','Widget'],a:0,e:'Clase madre universal de la que heredan de manera directa todos los elementos visuales interactivos de UI.'},
+            {s:1,q:'¿Qué es un ConstraintLayout?',o:['Un layout que organiza los elementos en filas y columnas.','Un layout que organiza los elementos en una lista desplazable.','Un layout que organiza los elementos mediante restricciones entre ellos.','Un layout que organiza los elementos en una rejilla.'],a:2,e:'Permite diseñar jerarquías visuales planas y complejas basándose en anclajes relativos de posición.'},
+            {s:1,q:'¿Qué es un ScrollView?',o:['Un layout que organiza los elementos en filas y columnas.','Un layout que organiza los elementos en una lista desplazable.','Un layout que organiza los elementos mediante restricciones entre ellos.','Un layout que organiza los elementos en una rejilla.'],a:1,e:'Contenedor que habilita barras de desplazamiento vertical automáticas si el contenido interno excede la pantalla.'},
+            {s:1,q:'¿Cuál es la diferencia entre un LinearLayout horizontal y uno vertical?',o:['El LinearLayout horizontal organiza los elementos en filas y el vertical los organiza en columnas.','El LinearLayout horizontal organiza los elementos en columnas y el vertical los organiza en filas.','El LinearLayout horizontal se utiliza para elementos de tamaño variable y el vertical para elementos de tamaño fijo.','No hay diferencia entre ellos, son lo mismo pero con diferente nombre.'],a:0,e:'Horizontal dispone componentes de izquierda a derecha (fila) y vertical en cascada (columna).'},
+            {s:1,q:'¿Cuál es el propósito de la etiqueta <include> en un layout de Android?',o:['Se utiliza para incluir un archivo de diseño dentro de otro archivo de diseño.','Se utiliza para definir un estilo para un elemento de diseño.','Se utiliza para definir una vista personalizada.','Se utiliza para definir un recurso de animación.'],a:0,e:'Permite modularizar y reutilizar fragmentos independientes de código XML gráficos comunes en varias vistas.'},
+            {s:1,q:'¿Qué es SQLite?',o:['Una base de datos relacional de código abierto.','Un servidor de base de datos en tiempo real.','Un lenguaje de programación utilizado para desarrollar aplicaciones Android.','Una biblioteca de gráficos para Android.'],a:0,e:'Motor relacional ligero integrado localmente a nivel de archivo físico sin requerir procesos servidores independientes.'},
+            {s:1,q:'¿Qué es una transacción en SQLite?',o:['Un conjunto de operaciones SQL que se realizan de forma atómica.','Un registro de cambios en la base de datos.','Una operación para eliminar datos de la base de datos.','Un comando para cambiar la estructura de la base de datos.'],a:0,e:'Garantiza seguridad e integridad atómica (ACID): o se consolidan todos los cambios o se revierte todo ante fallos.'},
+            {s:1,q:'¿Qué es una cláusula WHERE en una consulta SQL?',o:['Una cláusula para ordenar los resultados de una consulta.','Una cláusula para limitar el número de resultados devueltos por una consulta.','Una cláusula para especificar las columnas que se deben incluir en los resultados de una consulta.','Una cláusula para filtrar los resultados de una consulta según ciertos criterios.'],a:3,e:'Establece las condiciones y filtros lógicos de búsqueda que deben cumplir los registros para ser devueltos.'},
+            {s:1,q:'¿Qué es un Cursor en SQLite?',o:['Un objeto que se utiliza para almacenar los resultados de una consulta SQL.','Un objeto que se utiliza para realizar operaciones en la base de datos.','Un objeto que se utiliza para acceder a los recursos de la aplicación.','Un objeto que se utiliza para enviar datos a través de una red.'],a:0,e:'Objeto iterable que mantiene el puntero móvil estructurado apuntando sobre el set de registros arrojados.'},
+            {s:1,q:'¿Qué es el método execSQL() en SQLite?',o:['Un método para abrir la base de datos.','Un método para cerrar la base de datos.','Un método para ejecutar una consulta SQL.','Un método para borrar la base de datos.'],a:2,e:'Lanza instrucciones directas SQL puras que no retornan datos lógicos tabulares (ej. CREATE TABLE o INSERT).'},
+            {s:1,q:'¿Qué es Room Database?',o:['Un sistema de gestión de bases de datos relacionales.','Una biblioteca de persistencia de objetos en Android.','Una base de datos en memoria que se utiliza para pruebas en Android.','Un lenguaje de programación utilizado para el desarrollo de aplicaciones Android.'],a:1,e:'Capa de abstracción ORM oficial de Google sobre SQLite para mapear clases estables a tablas locales.'},
+            {s:1,q:'¿Cuáles son los componentes principales de Room Database?',o:['Entity, DAO y ViewModel.','Entity, DAO y Database.','Database, Repository y ViewModel.','Entity, Repository y Service.'],a:1,e:'Estructuras de tablas (Entity), firmas de consultas anotadas (DAO) y conector central de archivo (Database).'},
+            {s:1,q:'¿Qué es un DAO en Room Database?',o:['Un objeto que representa una tabla en la base de datos.','Un objeto que se utiliza para realizar consultas a la base de datos.','Un objeto que se utiliza para acceder a los recursos de la aplicación.','Un objeto que se utiliza para enviar datos a través de una red.'],a:1,e:'Data Access Object: la interfaz donde se declaran métodos anotados con queries lógicas directas.'},
+            {s:1,q:'¿Qué es un Entity en Room Database?',o:['Una clase que representa una tabla en la base de datos.','Una clase que se utiliza para realizar consultas a la base de datos.','Una clase que se utiliza para acceder a los recursos de la aplicación.','Una clase que se utiliza para enviar datos a través de una red.'],a:0,e:'Clase de datos cuyas propiedades modelan de forma exacta los nombres y tipos de las columnas de una tabla física.'},
+            {s:1,q:'¿Qué es la anotación @Database en Room Database?',o:['Una anotación que se utiliza para especificar una tabla en la base de datos.','Una anotación que se utiliza para especificar una columna en la tabla de la base de datos.','Una anotación que se utiliza para especificar la versión y los componentes de la base de datos.','Una anotación que se utiliza para definir una vista en la base de datos.'],a:2,e:'Directiva de configuración maestra aplicada a la clase abstracta que lista entidades y controla versiones.'},
+            {s:1,q:'¿Qué es Firebase Realtime Database?',o:['Una base de datos relacional de código abierto.','Un servidor de base de datos en tiempo real.','Una biblioteca de gráficos para Android.','Una herramienta para depurar aplicaciones Android.'],a:1,e:'Servicio NoSQL en la nube de Google encargado de la sincronización instantánea de datos vía WebSockets.'},
+            {s:1,q:'¿Cuál es el formato de los datos almacenados en Firebase Realtime Database?',o:['CSV','XML','JSON','TXT'],a:2,e:'La totalidad de la información remota se lee, escribe y procesa como un único archivo JSON.'},
+            {s:1,q:'¿Cómo se estructura los datos en Firebase Realtime Database?',o:['En tablas y columnas.','En colecciones y documentos.','En nodos y hojas.','En claves y valores.'],a:2,e:'Modelo jerárquico NoSQL ramificado compuesto de rutas estructuradas (nodos) y asignaciones finales (hojas).'},
+            {s:1,q:'¿Cómo se accede a los datos en Firebase Realtime Database?',o:['A través de una API REST.','A través de una API SOAP.','A través de una API GraphQL.','A través de una API JDBC.'],a:0,e:'Expone de forma nativa pasarelas endpoints REST HTTP para interactuar desde cualquier plataforma remota.'},
+            {s:1,q:'¿Qué es Firebase Authentication?',o:['Un sistema de autenticación para Firebase Realtime Database.','Una base de datos en memoria que se utiliza para pruebas en Firebase.','Una herramienta para depurar aplicaciones Firebase.','Un servidor de autenticación para aplicaciones móviles.'],a:3,e:'Servicio cloud integrado de control seguro de logins e identidades con proveedores múltiples nativos.'},
+            {s:1,q:'¿Qué es Android Studio?',o:['Un sistema operativo para dispositivos móviles.','Un IDE para el desarrollo de aplicaciones móviles Android.','Una biblioteca de componentes para aplicaciones Android.','Una herramienta para probar aplicaciones Android.'],a:1,e:'Entorno de Desarrollo Integrado (IDE) oficial provisto por Google edificado sobre IntelliJ IDEA.'},
+            {s:1,q:'¿Cuál de estos lenguajes de programación se utiliza en Android Studio?',o:['COBOL','C++','Python','Kotlin'],a:3,e:'Lenguaje moderno de tipado estático recomendado de manera prioritaria oficial por Google para Android nativo.'},
+            {s:1,q:'¿Qué es Gradle en Android Studio?',o:['Un sistema de gestión de bases de datos relacionales.','Un servidor de base de datos en tiempo real.','Un lenguaje de programación utilizado para el desarrollo de aplicaciones Android.','Un sistema de construcción de proyectos y gestión de dependencias.'],a:3,e:'Automatiza las tareas de compilación del código, empaquetado del APK y la descarga de librerías externas.'},
+            {s:1,q:'¿Qué son los AVD (Android Virtual Devices) en Android Studio?',o:['Dispositivos móviles reales.','Emuladores de dispositivos móviles.','Bibliotecas de componentes para aplicaciones Android.','Herramientas para depurar aplicaciones Android.'],a:1,e:'Android Virtual Device: configuraciones lógicas de perfiles de hardware que simulan terminales virtuales.'},
+            {s:1,q:'¿Qué es el Android Emulator en Android Studio?',o:['Un dispositivo móvil real.','Un emulador de dispositivos móviles.','Una biblioteca de componentes para aplicaciones Android.','Una herramienta para probar aplicaciones Android.'],a:1,e:'Software visual encargado de arrancar y operar las imágenes lógicas de terminal creadas por los AVD.'},
+            {s:1,q:'¿Qué es Toast en Android?',o:['Una clase para crear una notification en la barra de estado.','Una clase para mostrar mensajes cortos en la pantalla.','Una clase para crear diálogos de alerta.','Una clase para crear menús emergentes.'],a:1,e:'Pequeño aviso informativo flotante no intrusivo que emerge de forma temporal y se auto-oculta en segundos.'},
+            {s:1,q:'¿Cuál es el método para mostrar un loast en Android?',o:['show()','display()','toast()','message()'],a:0,e:'Invocación final obligatoria de la cadena de la clase Toast para forzar su renderizado visual en pantalla.'},
+            {s:1,q:'¿Cuánto tiempo se muestra por defecto un Toast en Android?',o:['1 segundo','2 segundos','3 segundos','4 segundos'],a:1,e:'Duración aproximada estándar estipulada para la constante corta base LENGTH_SHORT del framework móvil.'},
+            {s:1,q:'¿Qué es un servicio en Android?',o:['Una clase para crear notificaciones en la barra de estado.','Una clase para realizar operaciones en segundo plano.','Una clase para crear diálogos de alerta.','Una clase para crear menús emergentes.'],a:1,e:'Componente core sin layout especializado en procesos persistentes invisibles de background de larga duración.'},
+            {s:1,q:'¿Cómo se puede iniciar un servicio en Android?',o:['A través de un Intent.','A través de un Broadcast Receiver.','A través de un Content Provider.','A través de una Activity.'],a:0,e:'El vehículo mensajero unificado obligatorio del framework para levantar componentes lógicos del S.O. es el Intent.'},
+
+            // SECCIÓN 2: MULTIMEDIA Y GESTIÓN DE PERMISOS (1 a 50)
+            {s:2,q:'¿Qué es ADB en Android Studio?',o:['Una herramienta para crear y administrar bases de datos en Android.','Una herramienta para depurar aplicaciones Android en dispositivos reales y emuladores.','Una biblioteca de componentes para aplicaciones Android.','Un sistema de construcción de proyectos y gestión de dependencias.'],a:1,e:'Android Debug Bridge: consola de comandos puente para comunicar la PC con terminales físicos o emulados.'},
+            {s:2,q:'¿Qué es la capa de servicios en la arquitectura de Android?',o:['Una capa que proporciona la interfaz de usuario para una aplicación Android.','Una capa que proporciona acceso a los recursos de la aplicación, como archivos y bases de datos.','Una capa que proporciona servicios de fondo para la aplicación, como notificaciones y sincronización de datos.','Una capa que proporciona los componentes de la interfaz de usuario, como botones y campos de texto.'],a:2,e:'Estrato arquitectónico orientado al procesamiento asíncrono e invisible de fondo sin soporte de ventanas.'},
+            {s:2,q:'¿Qué es el permiso android.permission.CAMERA en Android?',o:['Un permiso para acceder a la cámara del dispositivo.','Un permiso para acceder al micrófono del dispositivo.','Un permiso para acceder al GPS del dispositivo.','Un permiso para acceder a la tarjeta SD del dispositivo.'],a:0,e:'Token identificador obligatorio exigido en el manifiesto para que el sistema permita explotar el hardware óptico.'},
+            {s:2,q:'¿Qué es el permiso android.permission.RECORD_AUDIO en Android?',o:['Un permiso para acceder a la cámara del dispositivo.','Un permiso para acceder al micrófono del dispositivo.','Un permiso para acceder al GPS del dispositivo.','Un permiso para acceder a la tarjeta SD del dispositivo.'],a:1,e:'Token de seguridad restrictivo mandatorio requerido por privacidad para capturar ondas sonoras desde el micro.'},
+            {s:2,q:'¿Qué es el permiso android.permission.ACCESS_FINE_LOCATION en Android?',o:['Un permiso para acceder a la cámara del dispositivo.','Un permiso para acceder al micrófono del dispositivo.','Un permiso para acceder al GPS del dispositivo.','Un permiso para acceder a la tarjeta SD del dispositivo.'],a:2,e:'Garantiza la obtención de coordenadas geográficas precisas combinando GPS y antenas de red.'},
+            {s:2,q:'¿Qué es un permiso en Android?',o:['Una función que controla el acceso de una aplicación a los recursos del dispositivo.','Una función que controla el acceso de una aplicación a la red.','Una función que controla el acceso de una aplicación a la interfaz de usuario.','Una función que controla el acceso de una aplicación a la memoria del dispositivo.'],a:0,e:'Mecanismo de control regulatorio para salvaguardar la privacidad del usuario aislándolo del hardware crítico.'},
+            {s:2,q:'¿Qué es un permiso peligroso en Android?',o:['Un permiso que se otorga automáticamente a las aplicaciones.','Un permiso que se solicita automáticamente a las aplicaciones.','Un permiso que controla el acceso a los recursos más críticos del dispositivo.','Un permiso que controla el acceso a los recursos menos críticos del dispositivo.'],a:2,e:'Permisos que comprometen la privacidad e integridad de datos sensibles (Cámara, GPS); exigen solicitud interactiva runtime.'},
+            {s:2,q:'¿Cómo se solicita un permiso en tiempo real en Android?',o:['A través del archivo AndroidManifest.xml.','A través del archivo build.gradle.','A través de la clase PermissionRequest.','A través de la clase ActivityCompat.'],a:3,e:'Usa requestPermissions() de la clase de compatibilidad ActivityCompat para lanzar el cartel flotante al usuario.'},
+            {s:2,q:'¿Qué es el método shouldShowRequestPermission Rationale() en Android?',o:['Un método que comprueba si un permiso está otorgado o no.','Un método que solicita un permiso en tiempo real.','Un método que comprueba si se debe mostrar una explicación para solicitar un permiso.','Un método que comprueba si un permiso es peligroso o no.'],a:2,e:'Retorna true si el usuario denegó el acceso previamente de forma interactiva, requiriendo argumentar por qué se pide.'},
+            {s:2,q:'¿Qué es el método onRequestPermissions Result() en Android?',o:['Un método que solicita un permiso en tiempo real.','Un método que comprueba si un permiso está otorgado o no.','Un método que se llama cuando se otorga o deniega un permiso en tiempo real.','Un método que comprueba si se debe mostrar una explicación para solicitar un permiso.'],a:2,e:'Callback receptor del veredicto final con vectores de respuesta tras la interacción con el diálogo flotante.'},
+            {s:2,q:'¿Qué es AudioTrack en Android?',o:['Una clase que permite reproducir audio en formato WAV.','Una clase que permite grabar audio en formato WAV.','Una clase que permite reproducir audio en formato MP1.','Una clase que permite grabar audio en formato MP1.'],a:0,e:'API de bajo nivel para inyectar y reproducir directamente flujos o buffers de bytes PCM crudos (como WAV).'},
+            {s:2,q:'¿Qué es SoundPool en Android?',o:['Una clase que permite reproducir audio en formato WAV.','Una clase que permite grabar audio en formato WAV.','Una clase que permite reproducir audio en formato MP1','Una clase que permite grabar audio en formato MP1'],a:0,e:'Mapea con la respuesta \'a\' debido a un error de duplicidad idéntico en el pool impreso original de ILERNA.'},
+            {s:2,q:'¿Qué es ToneGenerator en Android?',o:['Una clase que permite reproducir tonos de audio.','Una clase que permite grabar tonos de audio.','Una clase que permite reproducir archivos de audio en formato MP3.','Una clase que permite grabar archivos de audio en formato MP3.'],a:0,e:'Sintetiza de forma matemática ondas sinusoidales para tonos de marcado e impulsos DTMF telefónicos nativos.'},
+            {s:2,q:'¿Cuál es la diferencia entre AudioTrack y SoundPool en Android?',o:['Audio Track es más adecuado para reproducir sonidos largos, mientras que SoundPool es más adecuado para reproducir sonidos cortos.','AudioTrack es más adecuado para reproducir sonidos cortos, mientras que SoundPool es más adecuado para reproducir sonidos largos.','AudioTrack es más adecuado para reproducir archivos de audio en formato MP3, mientras que SoundPool es más adecuado para reproducir archivos de audio en formato WAV.','AudioTrack es más adecuado para grabar audio, mientras que SoundPool es más adecuado para reproducir audio.'],a:0,e:'AudioTrack sostiene streamings continuos extensos; SoundPool memoriza clips breves en la RAM para latencia cero.'},
+            {s:2,q:'¿Qué es el método setVolume() en Android?',o:['Un método que establece el volumen de un archivo de audio.','Un método que establece el tono de un archivo de audio.','Un método que establece el balance de un archivo de audio.','Un método que establece la velocidad de reproducción de un archivo de audio.'],a:0,e:'Regula la ganancia lineal estéreo de salida asignada al canal o foco activo multimedia del hardware.'},
+            {s:2,q:'¿Qué es MediaPlayer en Android?',o:['Una clase que permite reproducir archivos de audio en formato MP3.','Una clase que permite grabar archivos de audio en formato MP3.','Una clase que permite reproducir archivos de audio en formato WAB.','Una clase que permite grabar archivos de audio en formato WAB.'],a:0,e:'Manejador nativo de alto nivel del framework idóneo para canciones, vídeos y archivos empaquetados de larga duración.'},
+            {s:2,q:'¿Cómo se crea un objeto MediaPlayer en Android?',o:['A través de la clase MediaRecorder.','A través de la clase AudioManager.','A través de la clase SoundPool.','A través de la clase MediaPlayer.'],a:3,e:'Instanciación directa invocando al método estático factory unificado MediaPlayer.create().'},
+            {s:2,q:'¿Qué es el método setDataSource() en Android?',o:['Un método que establece el volumen de un archivo de audio.','Un método que establece la fuente de datos de un objeto MediaPlayer.','Un método que establece el tono de un archivo de audio.','Un método que establece el balance de un archivo de audio.'],a:1,e:'DataSource define la fuente; asigna la ruta del archivo, URL o URI de red que se va a procesar.'},
+            {s:2,q:'¿Qué es el método prepare() en Android?',o:['Un método que inicia la reproducción de un archivo de audio.','Un método que prepara un objeto MediaPlayer para su reproducción.','Un método que detiene la reproducción de un archivo de audio.','Un método que pausa la reproducción de un archivo de audio.'],a:1,e:'Fase síncrona obligatoria donde el reproductor pre-carga el códec, abre el archivo y procesa hilos iniciales.'},
+            {s:2,q:'¿Qué es el método setOnCompletionListener() en Android?',o:['Un método que establece un oyente para el final de la reproducción de un archivo de audio.','Un método que establece un oyente para la reproducción de un archivo de audio.','Un método que establece un oyente para el inicio de la reproducción de un archivo de audio.','Un método que establece un oyente para la pausa de la reproducción de un archivo de audio.'],a:0,e:'Completion significa completado; callback automático gatillado al finalizar la pista entera por completo.'},
+            {s:2,q:'¿Qué es ExoPlayer en Android?',o:['Un reproductor de audio y video de alta calidad.','Una librería para manipular archivos de audio en Android.','Una clase para crear efectos de sonido en Android.','Una librería para manipular archivos de video en Android.'],a:0,e:'Librería avanzada modular construida por Google, muy superior en flujos y streaming al clásico MediaPlayer.'},
+            {s:2,q:'¿Cómo se crea un objeto ExoPlayer en Android?',o:['A través de la clase MediaPlayer.','A través de la clase SoundPool.','A través de la clase ExoPlayer.','A través de la clase MediaRecorder.'],a:2,e:'Invocación directa apoyada en ExoPlayer.Builder de forma modular por las APIs de su librería.'},
+            {s:2,q:'¿Qué es el método prepare() en ExoPlayer?',o:['Un método que inicia la reproducción de un archivo de audio o video.','Un método que prepara un objeto ExoPlayer para su reproducción.','Un método que detiene la reproducción de un archivo de audio o video.','Un método que pausa la reproducción de un archivo de audio o video.'],a:1,e:'Prepara de forma asíncrona las fuentes lógicas multimedia (MediaSource) alimentando la tubería gráfica/acústica.'},
+            {s:2,q:'¿Qué es VolumeShaper en Android?',o:['Una clase que permite crear efectos de sonido.','Una clase que permite manipular el volumen de un archivo de audio.','Una clase que permite manipular el tono de un archivo de audio.','Una clase que permite crear efectos de volumen.'],a:3,e:'Ejecuta de forma precisa automatizaciones e interpolaciones de curvas de volumen integradas (ej. transiciones o fades).'},
+            {s:2,q:'¿Qué es el método addNode() en VolumeShaper?',o:['Un método que agrega un nodo de efecto de volumen a un objeto VolumeShaper.','Un método que agrega un nodo de efecto de sonido a un objeto VolumeShaper.','Un método que agrega un nodo de efecto de tono a un objeto VolumeShaper.','Un método que agrega un nodo de efecto de eco a un objeto VolumeShaper.'],a:0,e:'Inserta un punto de control cartesiano coordenado clave (tiempo/ganancia de volumen) dentro del Shaper.'},
+            {s:2,q:'¿Qué es RTP en Android?',o:['Un protocolo utilizado para la transmisión de video y audio en tiempo real.','Un protocolo utilizado para la transmisión de datos en tiempo real.','Un protocolo utilizado para la transmisión de archivos en tiempo real.','Un protocolo utilizado para la transmisión de texto en tiempo real.'],a:0,e:'Real-Time Transport Protocol: estándar de transporte sobre UDP idóneo para streaming VoIP de baja latencia.'},
+            {s:2,q:'¿Qué significa RTP en inglés?',o:['Un método alternativo...','Real-Time Protocol','Real-Time Player','Real-Time Program'],a:1,e:'Firma corta y simplificada adoptada textualmente de forma literal por los manuales teóricos de la asignatura.'},
+            {s:2,q:'¿Qué es el paquete RTP en Android?',o:['Un paquete que contiene las clases necesarias para implementar el protocolo RTP en una aplicación Android.','Un paquete que contiene las clases necesarias para reproducir archivos de audio y video en una aplicación Android.','Un paquete que contiene las clases necesarias para grabar archivos de audio y video en una aplicación Android.','Un paquete que contiene las clases necesarias para procesar archivos de audio y video en una aplicación Android.'],a:0,e:'Colección de herramientas nativas de red multimedia (android.net.rtp) para gestionar flujos VoIP.'},
+            {s:2,q:'¿Qué es el método setDataSource() en RTP?',o:['Un método que establece la fuente de datos para el paquete RTP.','Un método que establece la fuente de datos para un objeto MediaPlayer.','Un método que establece la fuente de datos para un objeto ExoPlayer.','Un método que establece la fuente de datos para un objeto Audio Track.'],a:0,e:'Aplica la configuración de enlace del origen de flujos dentro del paquete de transmisión de red.'},
+            {s:2,q:'¿Qué es el método start() en RTP?',o:['Un método que inicia la transmisión de audio o video a través del protocolo RTP','Un método que inicia la grabación de audio o video a través del protocolo RTP.','Un método que inicia la reproducción de audio o video a través del protocolo RTP.','Un método que inicia la transmisión de datos a través del protocolo RTP.'],a:0,e:'Abre los sockets de transmisión de red e inicia el despacho continuo de paquetes hacia el destino.'},
+            {s:2,q:'¿Qué son los servicios multimedia en Android?',o:['Servicios que permiten la reproducción y grabación de audio y video en segundo plano.','Servicios que permiten el procesamiento de imágenes y videos en segundo plano.','Servicios que permiten la edición de audio y video en segundo plano.','Servicios que permiten la descarga de archivos multimedia en segundo plano.'],a:0,e:'Hilos de background que sostienen la ejecución musical o captura óptica sin exigir que la ventana visual esté activa.'},
+            {s:2,q:'¿Qué es MediaRecorder en Android?',o:['Una clase que permite reproducir archivos de audio y video.','Una clase que permite grabar archivos de audio y video.','Una clase que permite procesar archivos de audio y video.','Una clase que permite editar archivos de audio y video.'],a:1,e:'Recorder significa grabadora; captura señales físicas del hardware y las codifica en archivos contenedores.'},
+            {s:2,q:'¿Qué es MediaPlayer en Android?',o:['Una clase que permite grabar archivos de audio y video.','Una clase que permite reproducir archivos de audio y video.','Una clase que permite procesar archivos de audio y video.','Una clase que permite editar archivos de audio y video.'],a:1,e:'Componente estándar de alto nivel unificado de Android especializado en decodificación y lectura multimedia.'},
+            {s:2,q:'¿Qué es SurfaceView en Android?',o:['Una vista que permite la reproducción de archivos de audio y video.','Una vista que permite la grabación de archivos de audio y video.','Una vista que permite la edición de archivos de audio y video.','Una vista que permite la procesamiento de archivos de audio y video.'],a:0,e:'Vista con superficie de renderizado directo independiente de la UI, perfecta para flujos continuos de vídeo.'},
+            {s:2,q:'¿Qué es el método setVideoSource() en Media Recorder?',o:['Un método que establece la fuente de video para la grabación.','Un método que establece la fuente de video para la reproducción.','Un método que establece la fuente de audio para la grabación.','Un método que establece la fuente de audio para la reproducción.'],a:0,e:'Asigna el origen de procedencia óptico (ej. la constante CAMERA del hardware) para la captura física de vídeo.'},
+            {s:2,q:'¿Qué son los permisos en Android?',o:['Mecanismos de seguridad que permiten a una aplicación acceder a recursos del sistema protegidos.','Mecanismos de seguridad que permiten a una aplicación acceder a recursos del sistema públicos.','Mecanismos de seguridad que permiten a una aplicación acceder a cualquier recurso del sistema.','Mecanismos de seguridad que no permiten a una aplicación acceder a ningún recurso del sistema.'],a:0,e:'Directivas de aislamiento que limitan qué APIs de hardware crítico o datos puede invocar una aplicación.'},
+            {s:2,q:'¿Cuál es la forma de solicitar permisos en Android?',o:['Mediante un archivo de configuración.','Mediante la configuración de la aplicación en el sistema operativo.','Mediante un cuadro de diálogo que se muestra al usuario.','Mediante la ejecución de una línea de código.'],a:2,e:'Se materializa de forma visual interactiva mediante el cuadro o aviso emergente interactivo del S.O.'},
+            {s:2,q:'¿Qué es el permiso de cámara en Android?',o:['Un permiso que permite a una aplicación acceder a la cámara del dispositivo.','Un permiso que permite a una aplicación acceder a los archivos de audio del dispositivo.','Un permiso que permite a una aplicación acceder a la ubicación del dispositivo.','Un permiso que permite a una aplicación acceder a los contactos del dispositivo.'],a:0,e:'Autorización de privacidad mandatoria para abrir los flujos ópticos y controlar las lentes físicas.'},
+            {s:2,q:'¿Qué es el permiso de grabación de audio en Android?',o:['Un permiso que permite a una aplicación acceder a la grabadora de audio del dispositivo.','Un permiso que permite a una aplicación acceder a la cámara del dispositivo.','Un permiso que permite a una aplicación acceder a la ubicación del dispositivo.','Un permiso que permite a una aplicación acceder a los contactos del dispositivo.'],a:0,e:'Autorización de privacidad mandatoria para registrar flujos de ondas desde el micrófono.'},
+            {s:2,q:'¿Qué es el permiso de GPS en Android?',o:['Un permiso que permite a una aplicación acceder a la ubicación del dispositivo.','Un permiso que permite a una aplicación acceder a los archivos de audio del dispositivo.','Un permiso que permite a una aplicación acceder a la cámara del dispositivo.','Un permiso que permite a una aplicación acceder a los contactos del dispositivo.'],a:0,e:'Autorización de privacidad mandatoria para recuperar coordenadas geográficas precisas desde el sensor.'},
+            {s:2,q:'¿Qué es un ConstraintLayout en Android Studio?',o:['Un layout que organiza los elementos en una cuadrícula.','Un layout que organiza los elementos en una lista.','Un layout que permite definir las relaciones entre los elementos.','Un layout que permite definir las propiedades de los elementos.'],a:2,e:'Contenedor que permite componer jerarquías planas complejas uniendo los elementos con ligaduras y anclajes.'},
+            {s:2,q:'¿Cuál es la forma correcta de acceder a la cámara en Android Studio mediante código Kotlin?',o:['Usando la clase CameraManager','Usando la clase Camera','Usando la clase Camera2','Usando la clase CameraX'],a:3,e:'CameraX es la solución de Jetpack más moderna, simplificada y compatible provista por Google.'},
+            {s:2,q:'¿Qué es la librería ExoPlayer en Android Studio?',o:['Una librería que permite la reproducción de archivos de audio y video.','Una librería que permite la grabación de archivos de audio y video.','Una librería que permite la edición de archivos de audio y video.','Una librería que permite el procesamiento de archivos de audio y video.'],a:0,e:'API modular extensible alternativa recomendada de alto nivel para consumo avanzado de streams.'},
+            {s:2,
